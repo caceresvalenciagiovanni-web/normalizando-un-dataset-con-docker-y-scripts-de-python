@@ -1,0 +1,67 @@
+services:
+  # Servicio de Base de Datos
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_normalizacion
+    restart: always
+    environment:
+      - POSTGRES_USER=admin_user
+      - POSTGRES_PASSWORD=admin_password
+      - POSTGRES_DB=netflix_db  # Base de datos por defecto
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistencia de datos
+      - ./docker-entrypoint:/docker-entrypoint-initdb.d # Script para crear las otras 2 DBs
+    networks:
+      - red_normalizacion
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d netflix_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Servicio de interfaz gráfica (pgAdmin 4)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"  # Accederemos por el puerto 5050 para no chocar con otros webs
+    networks:
+      - red_normalizacion
+    depends_on:
+      - db
+
+  # Servicio de Aplicación (Python ETL)
+  app:
+    build: .
+    container_name: python_etl_normalizer
+    depends_on:
+      db:
+        condition: service_healthy # Espera a que la DB esté lista
+    volumes:
+      # Montamos las carpetas locales para ver los resultados en nuestra PC
+      - ./sql:/app/sql
+      - ./raw:/app/raw
+    environment:
+      - DB_HOST=db
+      - DB_USER=admin_user
+      - DB_PASS=admin_password
+      # Nombres de las DBs para referencia futura
+      - DB_NAME_NETFLIX=netflix_db
+      - DB_NAME_ECOMMERCE=ecommerce_db
+      - DB_NAME_HOSPITAL=hospital_db
+    networks:
+      - red_normalizacion
+
+# Definición de volúmenes persistentes
+volumes:
+  postgres_data:
+
+# Definición de red privada
+networks:
+  red_normalizacion:
+    driver: bridge
