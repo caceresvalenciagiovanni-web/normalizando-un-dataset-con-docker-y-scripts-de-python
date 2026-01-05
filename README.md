@@ -45,3 +45,38 @@ normalizacion-db/
 │   └── normalize_hospital.py
 └── docker-entrypoint/      # Scripts de inicialización de BD
 ```
+## 🛠️ Instalación y Uso
+
+Prerrequisitos:
+-Docker Desktop instalado y ejecutándose.
+-(Opcional) Git para clonar el repositorio.
+
+Paso 1: Descargar el archivo .zip y descomprimir
+Nota: Asegúrate de que los archivos .csv originales estén en la carpeta raw/.
+
+Paso 2: Ejecutar con Docker
+Levanta todo el entorno con un solo comando. Docker construirá la imagen de Python, instalará las librerías y ejecutará los scripts.
+```bash
+docker compose up --build
+```
+Paso 3: Verificar Resultados
+Una vez que la terminal muestre que los scripts han finalizado, puedes verificar:
+Archivos SQL: Revisa la carpeta sql/ para ver el código generado.
+CSVs Normalizados: Revisa la carpeta data/normalized/ para ver las tablas separadas.
+Base de Datos: Accede a pgAdmin 4 desde tu navegador
+
+## 🖥️ Acceso a Servicios
+Servicio,URL / Dirección,Credenciales
+pgAdmin 4 (Web),http://localhost:5050,Email: admin@admin.com  Pass: root
+PostgreSQL (Externo),localhost:5433,User: admin_user  Pass: admin_password
+PostgreSQL (Interno),Host: db Port: 5432,(Para configurar dentro de pgAdmin)
+
+Nota: El puerto externo de PostgreSQL se configuró en 5433 para evitar conflictos con instalaciones locales en tu máquina.
+
+## 🧠 Metodología de Normalización
+El script de Python aplica las siguientes reglas teóricas:
+1FN (Atomicidad): Se identifican columnas con listas (ej. "Actor A, Actor B") y se utiliza explode() de Pandas para separar en registros únicos.
+2FN (Dependencias Parciales): Se separan atributos que no dependen de la clave completa en tablas maestras (ej. Tabla Shows separada de Shows_Actors).
+3FN (Dependencias Transitivas): Se crean catálogos independientes (ej. Countries, Genres) y se referencian mediante claves foráneas (IDs) para eliminar redundancia de texto.
+
+## Hecho con 🐍 y ❤️ para la clase de Bases de Datos.
